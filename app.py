@@ -3,6 +3,7 @@ import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 # --- 페이지 설정 ---
 st.set_page_config(layout="wide", page_title="미부과세대 종합 시스템")
@@ -47,7 +48,7 @@ NOTE_MAP = {
 }
 
 
-# --- 유티리티 함수 ---
+# --- 유틸리티 함수 ---
 @st.cache_data(show_spinner=False)
 def load_table(file_bytes):
     """엑셀 바이너리에서 헤더 위치를 찾아 데이터를 최적화하여 로드합니다."""
@@ -229,16 +230,13 @@ def generate_full_report(template_bytes, current_bytes, report_rows):
     if address_row_idx is None:
         address_row_idx = 2
 
-    # 행 정리 후 원본 데이터 삽입 위치 산출
     ws.delete_rows(4, amount=1)
     if address_row_idx > 4:
         address_row_idx -= 1
 
-    # 총 추가해야 할 행 수 계산하여 블록 삽입 (속도 최적화)
-    notice_block_size = len(notice_list) + 3  # 타이틀 + 안내사항 + 여백
-    report_block_size = (
-        (len(report_rows) + 3) if report_rows else 3
-    )  # 변동사항 타이틀 + 헤더/내용 + 여백
+    # 총 추가해야 할 행 수 계산하여 한 번에 삽입 (성능 최적화)
+    notice_block_size = len(notice_list) + 3
+    report_block_size = (len(report_rows) + 3) if report_rows else 3
     total_insert_rows = notice_block_size + report_block_size + 1
 
     insert_pos = address_row_idx + 2
@@ -257,7 +255,7 @@ def generate_full_report(template_bytes, current_bytes, report_rows):
         cell.alignment = ALIGN_LEFT
         curr_row += 1
 
-    curr_row += 1  # 여백
+    curr_row += 1
 
     # [2. 변동사항 영역 구성]
     cell = ws.cell(row=curr_row, column=1, value="2. 변동사항")
@@ -299,7 +297,7 @@ def generate_full_report(template_bytes, current_bytes, report_rows):
         cell.alignment = ALIGN_LEFT
         curr_row += 1
 
-    curr_row += 1  # 여백
+    curr_row += 1
 
     # [3. 세대 미부과 명세 영역 구성 및 하이라이트]
     cell = ws.cell(row=curr_row, column=1, value="3. 세대 미부과 명세")
@@ -428,7 +426,6 @@ if tmpl_file and file_a and file_b:
                     tmpl_bytes, file_b_bytes, report_rows
                 )
 
-                # 세션 상태에 저장하여 UI 재렌더링 시 보존
                 st.session_state["dash_rows"] = dash_rows
                 st.session_state["excel_bytes"] = excel_bytes
                 st.session_state["processed"] = True
@@ -436,7 +433,7 @@ if tmpl_file and file_a and file_b:
         except Exception as e:
             st.error(f"⚠️ 실행 중 오류가 발생했습니다: {e}")
 
-    # 분석 결과가 세션에 존재할 때 UI 표출
+    # 분석 결과 표출
     if st.session_state.get("processed", False):
         st.subheader("📊 웹 대시보드 (변동사항 내역)")
         dash_rows = st.session_state.get("dash_rows", [])
@@ -444,17 +441,77 @@ if tmpl_file and file_a and file_b:
         if dash_rows:
             df_dash = pd.DataFrame(dash_rows)
 
-            # 1. 데이터프레임 시각화 (우측 상단 기본 제공 아이콘으로 엑셀/CSV/복사 가능)
+            # 1. 데이터프레임 시각화
             st.dataframe(
                 df_dash.style.set_properties(**{"text-align": "center"}),
                 use_container_width=True,
                 hide_index=True,
             )
 
-            # 2. 클립보드 복사용 텍스트 제공 (안전한 표준 방식)
-            with st.expander("📋 대시보드 데이터 텍스트 복사 (Ctrl+C 가능)"):
-                tsv_data = df_dash.to_csv(index=False, sep="\t")
-                st.code(tsv_data, language="text")
+            # 2. 클립보드 복사 버튼 (안전한 복사 처리 지원)
+            tsv_data = df_dash.to_csv(index=False, sep="\t")
+
+            components.html(
+                f"""
+                <div style="margin-bottom: 10px;">
+                    <button id="copy-btn" style="
+                        background-color: #008CBA;
+                        color: white;
+                        padding: 9px 18px;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        font-size: 14px;
+                        transition: background-color 0.2s;
+                    " onmouseover="this.style.backgroundColor='#007399'" onmouseout="this.style.backgroundColor='#008CBA'">
+                        📋 대시보드 데이터 클립보드에 복사
+                    </button>
+                    <span id="copy-msg" style="margin-left: 12px; color: #2e7d32; font-weight: bold; display: none;">
+                        ✅ 복사되었습니다! 엑셀(Ctrl+V)에 붙여넣으세요.
+                    </span>
+                </div>
+                <textarea id="hidden-tsv" style="position: absolute; left: -9999px;">{tsv_data}</textarea>
+
+                <script>
+                document.getElementById('copy-btn').addEventListener('click', function() {{
+                    const textToCopy = {repr(tsv_data)};
+                    const msgEl = document.getElementById('copy-msg');
+
+                    // Modern API 권한 확인 후 복사 실행
+                    if (navigator.clipboard && window.isSecureContext) {{
+                        navigator.clipboard.writeText(textToCopy).then(function() {{
+                            showSuccess();
+                        }}).catch(function(err) {{
+                            fallbackCopy();
+                        }});
+                    }} else {{
+                        fallbackCopy();
+                    }}
+
+                    // HTTP 또는 iframe 보안 제한 시 Fallback 실행
+                    function fallbackCopy() {{
+                        const textArea = document.getElementById('hidden-tsv');
+                        textArea.select();
+                        try {{
+                            document.execCommand('copy');
+                            showSuccess();
+                        }} catch (err) {{
+                            alert('복사 실패: ' + err);
+                        }}
+                    }}
+
+                    function showSuccess() {{
+                        msgEl.style.display = 'inline';
+                        setTimeout(function() {{
+                            msgEl.style.display = 'none';
+                        }}, 3000);
+                    }}
+                }});
+                </script>
+                """,
+                height=65,
+            )
         else:
             st.success("🎉 변동 사항이 없습니다.")
 
@@ -478,7 +535,6 @@ if tmpl_file and file_a and file_b:
             type="primary",
         )
 else:
-    # 파일 변경 시 세션 초기화
     st.session_state["processed"] = False
     st.info(
         "🚨 3개 파일(1️⃣ 안내사항 템플릿, 2️⃣ 과거 파일, 3️⃣ 현재 파일)을 모두"
