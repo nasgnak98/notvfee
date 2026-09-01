@@ -250,7 +250,7 @@ def generate_full_report(template_bytes, current_bytes, report_rows):
 
 
 # --- Streamlit UI 구성 ---
-st.title("🏢 미부과세대 분석 및 보고서 결합 시스템")
+st.title("🏢 미부과세대 분석 및 보고서")
 
 st.subheader("📁 필수 파일 업로드 (3개 파일 필수)")
 col1, col2, col3 = st.columns(3)
