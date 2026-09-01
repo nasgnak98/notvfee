@@ -5,7 +5,9 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 import pandas as pd
 import streamlit as st
 
-# --- 페이지 기본 설정 ---
+# ==========================================
+# 1. 페이지 기본 설정 및 외부 CSS 주입
+# ==========================================
 st.set_page_config(
     layout="wide",
     page_title="미부과세대 종합 시스템",
@@ -13,9 +15,8 @@ st.set_page_config(
 )
 
 
-# --- 외부 CSS 로드 함수 ---
 def load_css(file_name: str = "style.css"):
-  """CSS 파일을 읽어와 Streamlit 화면에 적용합니다."""
+  """외부 CSS 파일을 읽어와 적용합니다."""
   css_path = Path(__file__).parent / file_name
   if css_path.exists():
     with open(css_path, "r", encoding="utf-8") as f:
@@ -24,7 +25,9 @@ def load_css(file_name: str = "style.css"):
 
 load_css("style.css")
 
-# --- 엑셀 스타일 상수 선언 ---
+# ==========================================
+# 2. 엑셀 기본 스타일 및 매핑 정보 선언
+# ==========================================
 FONT_TITLE = Font(name="돋움", size=11, bold=True)
 FONT_HEADER = Font(name="돋움", size=11, bold=True)
 FONT_BODY = Font(name="맑은 고딕", size=10)
@@ -64,10 +67,12 @@ NOTE_MAP = {
 }
 
 
-# --- 데이터 처리 및 로직 함수 ---
+# ==========================================
+# 3. 비즈니스 로직 함수 (캐싱 적용)
+# ==========================================
 @st.cache_data(show_spinner=False)
 def load_table(file_bytes: bytes) -> pd.DataFrame:
-  """엑셀 파일 바이트를 받아 기준 헤더(세대번호) 위치를 탐색 후 DataFrame으로 변환합니다."""
+  """엑셀 파일에서 기준 헤더(세대번호) 위치를 탐색하여 DataFrame을 반환합니다."""
   df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None)
   skip_row = None
 
@@ -123,7 +128,7 @@ def load_table(file_bytes: bytes) -> pd.DataFrame:
 
 
 def extract_info(row: pd.Series, target_df: pd.DataFrame):
-  """행 데이터로부터 변동일자 및 원인 사유를 추출합니다."""
+  """행 데이터에서 변동일자 및 원인 사유를 추출합니다."""
   res_date = "-"
   res_content = "-"
 
@@ -170,7 +175,7 @@ def extract_info(row: pd.Series, target_df: pd.DataFrame):
 
 
 def determine_report_text_and_note(status: str, raw_reason: str):
-  """사유에 따라 보고서 표기 문구 및 비고 키워드를 결정합니다."""
+  """사유에 맞춰 보고서 문구 및 비고 항목을 정제합니다."""
   raw_reason_str = str(raw_reason)
   detected_note = ""
 
@@ -195,7 +200,7 @@ def determine_report_text_and_note(status: str, raw_reason: str):
 def generate_full_report(
     template_bytes: bytes, current_bytes: bytes, report_rows: list
 ) -> bytes:
-  """Excel 템플릿과 변동사항 데이터를 결합하여 최종 보고서를 생성합니다."""
+  """템플릿과 생성된 분석 내역을 합성하여 최종 엑셀 파일을 생성합니다."""
   wb_tmpl = openpyxl.load_workbook(io.BytesIO(template_bytes))
   ws_tmpl = wb_tmpl.active
 
@@ -335,10 +340,12 @@ def generate_full_report(
   return output.getvalue()
 
 
-# --- 메인 화면 UI ---
-st.title("🏢 미부과세대 분석 및 보고서")
+# ==========================================
+# 4. Streamlit UI 대시보드 메인 화면
+# ==========================================
+st.title("🏢 미부과세대 분석 및 보고서 시스템")
 
-st.subheader("📁 필수 파일 업로드 (3개 파일 필수)")
+st.subheader("📁 필수 파일 업로드")
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -354,14 +361,13 @@ st.markdown("---")
 
 if tmpl_file and file_a and file_b:
   user_filename = st.text_input(
-      "📝 저장할 파일명을 입력해 주세요 (확장자 제외 가능):",
+      "📝 저장할 파일명 설정 (확장자 자동 적용):",
       value="미부과세대_변동_보고서_완성본",
   )
 
   if st.button("⚡ 분석 및 보고서 생성", type="primary"):
     try:
-      with st.spinner("데이터 분석 및 보고서 결합 중..."):
-        # 캐싱된 함수 호출 (바이트 데이터 입력)
+      with st.spinner("데이터 분석 및 보고서 합성 중..."):
         df_a = load_table(file_a.getvalue())
         df_b = load_table(file_b.getvalue())
 
@@ -418,7 +424,7 @@ if tmpl_file and file_a and file_b:
             tmpl_file.getvalue(), file_b.getvalue(), report_rows
         )
 
-      st.subheader("📊 웹 대시보드 (변동사항 내역)")
+      st.subheader("📊 웹 대시보드 (변동 내역 요약)")
       if dash_rows:
         df_dash = pd.DataFrame(dash_rows)
 
@@ -430,22 +436,36 @@ if tmpl_file and file_a and file_b:
 
         tsv_data = df_dash.to_csv(index=False, sep="\t")
 
-        # HTML Component (클립보드 복사 버튼)
+        # HTML component 복사 버튼 (외부 CSS 디자인 테두리와 통일)
         st.components.v1.html(
             f"""
                 <style>
+                    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
                     .copy-btn {{
-                        background-color: #008CBA;
-                        color: white;
-                        padding: 8px 16px;
-                        border: none;
-                        border-radius: 4px;
+                        width: 100%;
+                        background-color: #ffffff;
+                        color: #334155;
+                        border: 1px solid #cbd5e1;
+                        padding: 10px 16px;
+                        border-radius: 8px;
                         cursor: pointer;
-                        font-weight: bold;
+                        font-family: 'Pretendard', sans-serif;
+                        font-weight: 600;
                         font-size: 14px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                        transition: all 0.2s ease;
                     }}
                     .copy-btn:hover {{
-                        background-color: #005f73;
+                        background-color: #f8fafc;
+                        border-color: #94a3b8;
+                        color: #0f172a;
+                    }}
+                    .copy-btn:active {{
+                        background-color: #f1f5f9;
                     }}
                 </style>
                 <button id="copy-btn" class="copy-btn">📋 대시보드 데이터 클립보드에 복사</button>
@@ -460,24 +480,21 @@ if tmpl_file and file_a and file_b:
                 }});
                 </script>
                 """,
-            height=50,
+            height=55,
         )
 
       else:
         st.success("🎉 변동 사항이 없습니다.")
 
       st.divider()
-      st.subheader("📥 최종 결과물 다운로드")
-      st.success(
-          "🎉 보고서 생성이 완료되었습니다! 아래 다운로드 버튼을 클릭해 주세요."
-      )
+      st.subheader("📥 최종 보고서 다운로드")
 
       clean_filename = user_filename.strip()
       if not clean_filename.endswith(".xlsx"):
         clean_filename += ".xlsx"
 
       st.download_button(
-          label=f"📥 '{clean_filename}' 다운로드",
+          label=f"📥 '{clean_filename}' 파일 다운로드",
           data=excel_bytes,
           file_name=clean_filename,
           mime=(
@@ -487,9 +504,9 @@ if tmpl_file and file_a and file_b:
       )
 
     except Exception as e:
-      st.error(f"⚠️ 실행 중 오류가 발생했습니다: {e}")
+      st.error(f"⚠️ 처리 중 오류가 발생했습니다: {e}")
 else:
   st.info(
-      "🚨 3개 파일(1️⃣ 안내사항 템플릿, 2️⃣ 과거 파일, 3️⃣ 현재 파일)을 모두"
+      "🚨 필수 파일 3개(안내사항 템플릿, 과거 파일, 현재 파일)를 모두"
       " 업로드해 주세요."
   )
