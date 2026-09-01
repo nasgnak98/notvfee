@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. 글로벌 웹폰트 및 배경 설정
+   1. Streamlit 기본 테마 색상 변수 활용 (자동 반응형)
    ========================================================================== */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
@@ -7,12 +7,7 @@ html, body, [class*="css"] {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
 }
 
-/* 전체 앱 배경 */
-.stApp {
-    background-color: #f8fafc;
-}
-
-/* 메인 여백 조절 */
+/* 메인 컨테이너 레이아웃 설정 */
 .main .block-container {
     padding-top: 2rem;
     padding-bottom: 3rem;
@@ -20,20 +15,36 @@ html, body, [class*="css"] {
 }
 
 /* ==========================================================================
-   2. 파일 업로더 영역 스타일링
+   2. 다크/라이트 모드 자동 대응 카드 및 테두리 (Streamlit 테마 변수 연결)
    ========================================================================== */
+/* 파일 업로더 영역 */
 [data-testid="stFileUploader"] {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
+    background-color: var(--background-color, #ffffff);
+    border: 1px solid var(--secondary-background-color, #e2e8f0);
     border-radius: 10px;
     padding: 0.8rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* 데이터프레임 카드 */
+[data-testid="stDataFrame"] {
+    background-color: var(--background-color, #ffffff);
+    border: 1px solid var(--secondary-background-color, #e2e8f0);
+    border-radius: 10px;
+    padding: 0.2rem;
+}
+
+/* 입력창 */
+.stTextInput > div > div > input {
+    border-radius: 6px !important;
+    background-color: var(--background-color, #ffffff) !important;
+    color: var(--text-color, #1e293b) !important;
 }
 
 /* ==========================================================================
-   3. 버튼 디자인 (Primary & Download)
+   3. 다크/라이트 상관없이 선명한 포인트 버튼
    ========================================================================== */
-/* 분석 및 보고서 생성 버튼 */
+/* Primary 실행 버튼 */
 .stButton > button[kind="primary"],
 .stButton > button[data-testid="baseButton-primary"] {
     background-color: #2563eb !important;
@@ -42,7 +53,6 @@ html, body, [class*="css"] {
     border-radius: 8px !important;
     padding: 0.5rem 1rem !important;
     font-weight: 600 !important;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
     width: 100%;
 }
 
@@ -64,19 +74,4 @@ html, body, [class*="css"] {
 
 [data-testid="stDownloadButton"] > button:hover {
     background-color: #047857 !important;
-}
-
-/* ==========================================================================
-   4. 데이터프레임 테두리 및 입력창
-   ========================================================================== */
-[data-testid="stDataFrame"] {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 0.2rem;
-}
-
-.stTextInput > div > div > input {
-    border-radius: 6px !important;
-    border: 1px solid #cbd5e1 !important;
 }
