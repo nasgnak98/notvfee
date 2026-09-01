@@ -436,7 +436,7 @@ if tmpl_file and file_a and file_b:
 
         tsv_data = df_dash.to_csv(index=False, sep="\t")
 
-        # 레이아웃 깨짐 없는 컴팩트 복사 버튼
+        # 클립보드 복사 HTML/JS 컴포넌트
         st.components.v1.html(
             f"""
                 <style>
@@ -448,9 +448,9 @@ if tmpl_file and file_a and file_b:
                     .copy-btn {{
                         width: 100%;
                         box-sizing: border-box;
-                        background-color: #ffffff;
-                        color: #334155;
-                        border: 1px solid #cbd5e1;
+                        background-color: var(--secondary-background-color, #ffffff);
+                        color: var(--text-color, #334155);
+                        border: 1px solid rgba(148, 163, 184, 0.4);
                         padding: 8px 12px;
                         border-radius: 6px;
                         cursor: pointer;
@@ -460,8 +460,7 @@ if tmpl_file and file_a and file_b:
                         transition: all 0.2s ease;
                     }}
                     .copy-btn:hover {{
-                        background-color: #f1f5f9;
-                        border-color: #94a3b8;
+                        opacity: 0.8;
                     }}
                 </style>
                 <button id="copy-btn" class="copy-btn">📋 대시보드 데이터 클립보드에 복사</button>
@@ -476,7 +475,7 @@ if tmpl_file and file_a and file_b:
                 }});
                 </script>
                 """,
-            height=40,  # 높이를 40px로 축소하여 불필요한 여백 제거
+            height=40,
         )
 
       else:
