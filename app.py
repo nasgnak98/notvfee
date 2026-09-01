@@ -436,36 +436,32 @@ if tmpl_file and file_a and file_b:
 
         tsv_data = df_dash.to_csv(index=False, sep="\t")
 
-        # HTML component 복사 버튼 (외부 CSS 디자인 테두리와 통일)
+        # 레이아웃 깨짐 없는 컴팩트 복사 버튼
         st.components.v1.html(
             f"""
                 <style>
-                    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+                    body {{
+                        margin: 0;
+                        padding: 0;
+                        background: transparent;
+                    }}
                     .copy-btn {{
                         width: 100%;
+                        box-sizing: border-box;
                         background-color: #ffffff;
                         color: #334155;
                         border: 1px solid #cbd5e1;
-                        padding: 10px 16px;
-                        border-radius: 8px;
+                        padding: 8px 12px;
+                        border-radius: 6px;
                         cursor: pointer;
-                        font-family: 'Pretendard', sans-serif;
+                        font-family: -apple-system, sans-serif;
                         font-weight: 600;
-                        font-size: 14px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 8px;
-                        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                        font-size: 13px;
                         transition: all 0.2s ease;
                     }}
                     .copy-btn:hover {{
-                        background-color: #f8fafc;
-                        border-color: #94a3b8;
-                        color: #0f172a;
-                    }}
-                    .copy-btn:active {{
                         background-color: #f1f5f9;
+                        border-color: #94a3b8;
                     }}
                 </style>
                 <button id="copy-btn" class="copy-btn">📋 대시보드 데이터 클립보드에 복사</button>
@@ -480,7 +476,7 @@ if tmpl_file and file_a and file_b:
                 }});
                 </script>
                 """,
-            height=55,
+            height=40,  # 높이를 40px로 축소하여 불필요한 여백 제거
         )
 
       else:
